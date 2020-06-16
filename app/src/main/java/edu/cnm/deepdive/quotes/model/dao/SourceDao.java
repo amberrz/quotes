@@ -30,6 +30,7 @@ public interface SourceDao {
   @Delete
   Single<Integer> delete(Source... sources);
 
-  @Query("SELECT * FORM Source ORDER BY name")
+  @Query("SELECT * FROM Source ORDER BY name")
   Single<List<Source>> selecAll();
+
 }
