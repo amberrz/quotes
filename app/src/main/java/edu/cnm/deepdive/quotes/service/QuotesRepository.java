@@ -29,6 +29,9 @@ private final QuoteDao quoteDao;
 
   }
 
-  // TODO Add other methods
+public Single<QuoteWithSource> getQuote(long id) {
+    return quoteDao.selectById(id)
+        .subscribeOn(Schedulers.io());
+}
 
 }
