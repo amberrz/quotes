@@ -1,45 +1,79 @@
 package edu.cnm.deepdive.quotes.service;
 
+
+
 import android.annotation.SuppressLint;
+
 import android.app.Application;
-import android.icu.text.Edits;
+
 import androidx.annotation.NonNull;
+
 import androidx.room.Database;
+
 import androidx.room.Room;
+
 import androidx.room.RoomDatabase;
+
+import androidx.room.TypeConverter;
 import androidx.sqlite.db.SupportSQLiteDatabase;
+
 import edu.cnm.deepdive.quotes.R;
+
 import edu.cnm.deepdive.quotes.model.dao.QuoteDao;
+
 import edu.cnm.deepdive.quotes.model.dao.SourceDao;
+
 import edu.cnm.deepdive.quotes.model.entity.Quote;
+
 import edu.cnm.deepdive.quotes.model.entity.Source;
+
 import io.reactivex.schedulers.Schedulers;
+
 import java.io.IOException;
+
 import java.io.InputStream;
+
 import java.io.InputStreamReader;
+
 import java.io.Reader;
+
+import java.util.Collection;
+
 import java.util.Collections;
+
 import java.util.HashMap;
+
 import java.util.Iterator;
+
 import java.util.LinkedList;
+
 import java.util.List;
+
 import java.util.Map;
+
 import org.apache.commons.csv.CSVFormat;
+
 import org.apache.commons.csv.CSVParser;
+
 import org.apache.commons.csv.CSVRecord;
 
+
+
 @Database(
+
     entities = {Source.class, Quote.class},
     version = 1,
     exportSchema = true
 )
-public abstract class QuotesDatabase extends RoomDatabase {
+
+public  abstract class  QuotesDatabase extends RoomDatabase {
 
   private static final String DB_NAME = "quotes_db";
 
   private static Application context;
 
   public static void setContext(Application context) {
+
     QuotesDatabase.context = context;
   }
 
@@ -52,6 +86,8 @@ public abstract class QuotesDatabase extends RoomDatabase {
   }
 
   private static class InstanceHolder {
+
+    // Set other options for builder to use when creating QuotesDatabase instance.
 
     private static final QuotesDatabase INSTANCE =
         Room.databaseBuilder(context, QuotesDatabase.class, DB_NAME)
@@ -67,23 +103,25 @@ public abstract class QuotesDatabase extends RoomDatabase {
       try {
         Map<Source, List<Quote>> map = parseFile(R.raw.quotes);
         persist(map);
+
       } catch (IOException e) {
-        throw  new RuntimeException(e);
+        throw new RuntimeException(e);
       }
     }
 
     private Map<Source, List<Quote>> parseFile(int resourceId) throws IOException {
-      try(
+      try (
           InputStream input = QuotesDatabase.context.getResources().openRawResource(resourceId);
           Reader reader = new InputStreamReader(input);
           CSVParser parser = CSVParser.parse(
               reader, CSVFormat.EXCEL.withIgnoreSurroundingSpaces().withIgnoreEmptyLines());
       ) {
+
         Map<Source, List<Quote>> map = new HashMap<>();
-        for(CSVRecord record : parser) {
+        for (CSVRecord record : parser) {
           Source source = null;
           String sourceName = record.get(0).trim();
-          if(!sourceName.isEmpty()) {
+          if (!sourceName.isEmpty()) {
             source = new Source();
             source.setName(sourceName);
           }
@@ -94,7 +132,6 @@ public abstract class QuotesDatabase extends RoomDatabase {
         }
         return map;
       }
-
     }
 
     @SuppressLint("CheckResult")
@@ -105,6 +142,7 @@ public abstract class QuotesDatabase extends RoomDatabase {
       List<Source> sources = new LinkedList<>(map.keySet());
       List<Quote> unattributed = map.getOrDefault(null, Collections.emptyList());
       sources.remove(null);
+      //noinspection ResultOfMethodCallIgnored
       sourceDao.insert(sources)
           .subscribeOn(Schedulers.io())
           .flatMap((sourceIds) -> {
@@ -113,11 +151,10 @@ public abstract class QuotesDatabase extends RoomDatabase {
             Iterator<Source> sourceIterator = sources.iterator();
             while (idIterator.hasNext()) {
               long sourceId = idIterator.next();
-              for(Quote quote : map.getOrDefault(sourceIterator.next(),Collections.emptyList())) {
+              for (Quote quote : map.getOrDefault(sourceIterator.next(), Collections.emptyList())) {
                 quote.setSourceId(sourceId);
                 quotes.add(quote);
               }
-
             }
             quotes.addAll(unattributed);
             return quoteDao.insert(quotes);
@@ -126,6 +163,21 @@ public abstract class QuotesDatabase extends RoomDatabase {
               (quoteIds) -> {},
               (throwable) -> {throw new RuntimeException(throwable);}
           );
+    }
+  }
+
+
+  public static class Converters {
+    //is a static, utility class and have be plural name
+    @TypeConverter //it is @ for a method
+    public static Long dateToLong(Date value) {
+      return (value != null) ? value.getTime() : null;
+    }
+
+    @TypeConverter
+    public static Date longToDate(Long value) {
+      return (value != null) ? new Date(value) : null;
+
     }
   }
 
