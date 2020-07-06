@@ -3,8 +3,6 @@ package edu.cnm.deepdive.quotes;
 import android.app.Application;
 import com.facebook.stetho.Stetho;
 import edu.cnm.deepdive.quotes.service.QuotesDatabase;
-import io.reactivex.Scheduler;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class QuotesApplication extends Application {

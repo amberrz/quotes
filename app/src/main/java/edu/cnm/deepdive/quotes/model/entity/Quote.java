@@ -24,6 +24,8 @@ public class Quote {
   @ColumnInfo(name = "source_id", index = true)
   private Long sourceId;
 
+
+
   @NonNull
   @ColumnInfo(collate = ColumnInfo.NOCASE)
   private String text = "";

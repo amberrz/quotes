@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS `Source`
     `name`      TEXT                              NOT NULL COLLATE NOCASE
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS `index_Source_name` ON `Source` (`name`)
+CREATE UNIQUE INDEX IF NOT EXISTS `index_Source_name` ON `Source` (`name`);
 
 CREATE TABLE IF NOT EXISTS `Quote`
 (

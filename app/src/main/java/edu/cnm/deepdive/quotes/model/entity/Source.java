@@ -15,6 +15,7 @@ public class Source {
   private long id;
 
 
+
   @NonNull
   @ColumnInfo(collate = ColumnInfo.NOCASE)
 private String name = "";
