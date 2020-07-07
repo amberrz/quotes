@@ -19,7 +19,7 @@ public class GoogleSignInService {
 
   private static Application context;
 
-  private  GoogleSignInClient client;
+  private GoogleSignInClient client;
   private final MutableLiveData<GoogleSignInAccount> account;
   private final MutableLiveData<Throwable> throwable;
 
@@ -30,7 +30,7 @@ public class GoogleSignInService {
         .requestEmail()
         .requestId()
         .requestProfile()
-         //.requestIdToken(BuildConfig.CLIENT_ID)
+        //.requestIdToken(BuildConfig.CLIENT_ID)
         .build();
     client = GoogleSignIn.getClient(context, options);
   }
@@ -51,33 +51,43 @@ public class GoogleSignInService {
     return throwable;
   }
 
-public Task<GoogleSignInAccount> refresh() {
-    return client.silentSignIn(); // TODO Add listeners
-}
-
-public void startSignIn(Activity activity, int requestCode) {
-    // TODO Update account and throwable.
-  Intent intent = client.getSignInIntent();
-  activity.startActivityForResult(intent, requestCode);
-}
-
-public Task<GoogleSignInAccount> completeSignIn(Intent data) {
-    Task<GoogleSignInAccount> task = null;
-  try {
-    task = GoogleSignIn.getSignedInAccountFromIntent(data);
-    account.setValue(task.getResult(ApiException.class));
-  } catch (ApiException e) {
-    // TODO Update throwable
+  public Task<GoogleSignInAccount> refresh() {
+    return client.silentSignIn()
+        .addOnSuccessListener(this::update)
+        .addOnFailureListener(this::update);
   }
-  return task;
-}
-public Task<Void> signOut() {
-    return client.signOut()
-        .addOnCompleteListener((Ignore) -> { /* TODO Update account*/});
-}
 
-  //TODO Update method for account
-  // TODO add update method for throwable
+  public void startSignIn(Activity activity, int requestCode) {
+    update((GoogleSignInAccount) null);
+    Intent intent = client.getSignInIntent();
+    activity.startActivityForResult(intent, requestCode);
+  }
+
+  public Task<GoogleSignInAccount> completeSignIn(Intent data) {
+    Task<GoogleSignInAccount> task = null;
+    try {
+      task = GoogleSignIn.getSignedInAccountFromIntent(data);
+      update(task.getResult(ApiException.class));
+    } catch (ApiException e) {
+    update(e);
+    }
+    return task;
+  }
+
+  public Task<Void> signOut() {
+    return client.signOut()
+        .addOnCompleteListener((Ignore) -> update((GoogleSignInAccount) null));
+  }
+
+  private void update(GoogleSignInAccount account) {
+    this.account.setValue(account);
+    this.throwable.setValue(null);
+  }
+
+  private void update(Throwable throwable) {
+    this.account.setValue(null);
+    this.throwable.setValue(throwable);
+  }
 
   private static class InstanceHolder {
 
