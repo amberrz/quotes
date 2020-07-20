@@ -1,80 +1,51 @@
 package edu.cnm.deepdive.quotes.service;
 
-
-
 import android.annotation.SuppressLint;
-
 import android.app.Application;
-
 import androidx.annotation.NonNull;
-
 import androidx.room.Database;
-
 import androidx.room.Room;
-
 import androidx.room.RoomDatabase;
-
 import androidx.room.TypeConverter;
+import androidx.room.TypeConverters;
+import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
-
 import edu.cnm.deepdive.quotes.R;
-
 import edu.cnm.deepdive.quotes.model.dao.QuoteDao;
-
 import edu.cnm.deepdive.quotes.model.dao.SourceDao;
-
 import edu.cnm.deepdive.quotes.model.entity.Quote;
-
 import edu.cnm.deepdive.quotes.model.entity.Source;
-
+import edu.cnm.deepdive.quotes.service.QuotesDatabase.Converters;
 import io.reactivex.schedulers.Schedulers;
-
 import java.io.IOException;
-
 import java.io.InputStream;
-
 import java.io.InputStreamReader;
-
 import java.io.Reader;
-
 import java.util.Collection;
-
 import java.util.Collections;
-
 import java.util.Date;
 import java.util.HashMap;
-
 import java.util.Iterator;
-
 import java.util.LinkedList;
-
 import java.util.List;
-
 import java.util.Map;
-
 import org.apache.commons.csv.CSVFormat;
-
 import org.apache.commons.csv.CSVParser;
-
 import org.apache.commons.csv.CSVRecord;
 
-
-
 @Database(
-
     entities = {Source.class, Quote.class},
-    version = 1,
+    version = 2,
     exportSchema = true
 )
-
-public  abstract class  QuotesDatabase extends RoomDatabase {
+@TypeConverters({Converters.class})
+public abstract class QuotesDatabase extends RoomDatabase {
 
   private static final String DB_NAME = "quotes_db";
 
   private static Application context;
 
   public static void setContext(Application context) {
-
     QuotesDatabase.context = context;
   }
 
@@ -88,12 +59,25 @@ public  abstract class  QuotesDatabase extends RoomDatabase {
 
   private static class InstanceHolder {
 
-    // Set other options for builder to use when creating QuotesDatabase instance.
-
     private static final QuotesDatabase INSTANCE =
         Room.databaseBuilder(context, QuotesDatabase.class, DB_NAME)
+            .addMigrations(new Migration12())
             .addCallback(new QuotesCallback())
             .build();
+
+  }
+
+  private static final class Migration12 extends Migration {
+
+    public Migration12() {
+      super(1, 2);
+    }
+
+    @Override
+    public void migrate(@NonNull SupportSQLiteDatabase database) {
+      database.execSQL("ALTER TABLE Quote ADD COLUMN created INTEGER");
+    }
+
   }
 
   private static class QuotesCallback extends Callback {
@@ -104,7 +88,6 @@ public  abstract class  QuotesDatabase extends RoomDatabase {
       try {
         Map<Source, List<Quote>> map = parseFile(R.raw.quotes);
         persist(map);
-
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -117,7 +100,6 @@ public  abstract class  QuotesDatabase extends RoomDatabase {
           CSVParser parser = CSVParser.parse(
               reader, CSVFormat.EXCEL.withIgnoreSurroundingSpaces().withIgnoreEmptyLines());
       ) {
-
         Map<Source, List<Quote>> map = new HashMap<>();
         for (CSVRecord record : parser) {
           Source source = null;
@@ -165,12 +147,12 @@ public  abstract class  QuotesDatabase extends RoomDatabase {
               (throwable) -> {throw new RuntimeException(throwable);}
           );
     }
+
   }
 
-
   public static class Converters {
-    //is a static, utility class and have be plural name
-    @TypeConverter //it is @ for a method
+
+    @TypeConverter
     public static Long dateToLong(Date value) {
       return (value != null) ? value.getTime() : null;
     }
@@ -178,8 +160,8 @@ public  abstract class  QuotesDatabase extends RoomDatabase {
     @TypeConverter
     public static Date longToDate(Long value) {
       return (value != null) ? new Date(value) : null;
-
     }
+
   }
 
 }
